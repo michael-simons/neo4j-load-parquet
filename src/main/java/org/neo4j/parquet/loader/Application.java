@@ -8,6 +8,7 @@ import java.util.concurrent.Callable;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.SessionConfig;
+import org.neo4j.driver.Values;
 
 import blue.strategic.parquet.ParquetReader;
 import picocli.CommandLine;
@@ -103,7 +104,7 @@ public final class Application implements Callable<Integer> {
 				CALL {
 				    WITH p DETACH DELETE p
 				} IN TRANSACTIONS OF $rows ROWS""", Map.of("label", label, "rows", batchSize)).consume();
-			var data = ParquetReader.streamContent(file, PropertiesHydrator::new);
+			var data = ParquetReader.streamContent(file, listOfColumns -> new PropertiesHydrator<>(listOfColumns, Values::value));
 			data.forEach(writer::addNode);
 			writer.flush();
 

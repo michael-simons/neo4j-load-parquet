@@ -16,6 +16,7 @@
 		<maven.compiler.release>${java.version}</maven.compiler.release>
 		<maven.version>3.8.7</maven.version>
 		<neo4j-java-driver.version>5.9.0</neo4j-java-driver.version>
+		<neo4j.version>5.9.0</neo4j.version>
 		<parquet-floor.version>1.38</parquet-floor.version>
 		<picocli.version>4.7.0</picocli.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -45,6 +46,12 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-simple</artifactId>
 			<version>${slf4j-simple.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.neo4j</groupId>
+			<artifactId>neo4j</artifactId>
+			<version>${neo4j.version}</version>
+			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 
