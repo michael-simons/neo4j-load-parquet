@@ -51,3 +51,22 @@ CALL {
   CREATE (r:Ride) SET r = row
 } IN TRANSACTIONS of 100000 rows;
 ```
+
+## Misc
+
+### Converting Stackoverflow content to single parquet files
+
+I used the `gis` archive from https://archive.org/details/stackexchange for the following conversion. This takes only posts with a title and an owner id into account.
+
+```bash
+# Create intermedia users
+xidel -se '//row/[(@Id|@Reputation|@DisplayName)]' Users.xml | jq -r '. | @tsv' | duckdb -c "copy (select * from read_csv_auto('/dev/stdin', names=['user_id', 'user_reputation', 'user_name'])) to 'users.csv' HEADER;"
+# Create intermediate posts
+xidel -se '//row[string(@Title) and string(@OwnerUserId)]/[(@Id|@OwnerUserId|@Title)]' posts.xml | jq -r '. | @tsv' | duckdb -c "copy (select * from read_csv_auto('/dev/stdin', names=['id', 'user_id', 'title'])) to 'posts.csv' HEADER;"
+# Join them together, export to parquet
+duckdb -c "COPY (
+  SELECT *
+    FROM 'posts.csv'
+    JOIN 'users.csv' USING (user_id)
+) TO 'so.parquet'"
+```
