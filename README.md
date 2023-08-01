@@ -62,7 +62,8 @@ I used the `gis` archive from https://archive.org/details/stackexchange for the 
 # Create intermedia users
 xidel -se '//row/[(@Id|@Reputation|@DisplayName)]' Users.xml | jq -r '. | @tsv' | duckdb -c "copy (select * from read_csv_auto('/dev/stdin', names=['user_id', 'user_reputation', 'user_name'])) to 'users.csv' HEADER;"
 # Create intermediate posts
-xidel -se '//row[string(@Title) and string(@OwnerUserId)]/[(@Id|@OwnerUserId|@Title)]' posts.xml | jq -r '. | @tsv' | duckdb -c "copy (select * from read_csv_auto('/dev/stdin', names=['id', 'user_id', 'title'])) to 'posts.csv' HEADER;"
+xidel -se '//row[string(@Title) and string(@OwnerUserId)]/[(@Id|@OwnerUserId|@Title)]' posts.xml | jq -r '. | @tsv' | duckdb -c "copy (select * from read_csv_auto('/dev/stdin', names=['id', 'user_id', 'title_or_excerpt'], quote='', escape='')) to '/dev/stdout' HEADER;" > posts.csv
+xidel -se '//row[not(string(@Title)) and string(@OwnerUserId)]/[(@Id|@Body|@OwnerUserId)]' posts.xml | jq -r '. | @tsv' | duckdb -c "copy (select id, user_id, substring(title_or_excerpt, 0, 32) as title_or_excerpt from read_csv_auto('/dev/stdin', names=['id', 'title_or_excerpt', 'user_id'], quote='', escape='')) to '/dev/stdout';" >> posts.csv
 # Join them together, export to parquet
 duckdb -c "COPY (
   SELECT *
