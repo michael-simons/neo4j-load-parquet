@@ -124,13 +124,14 @@ public class SoLoaderApplication implements Callable<Integer> {
 					CALL {
 						WITH row, p
 						MATCH (pp:Post {id: row.parent_id})
-						CREATE (p) -[:ANSWER_TO]-> (pp)
+						CREATE (p) -[:HAS_PARENT]-> (pp)
 					}
 					WITH p
 					CALL {
 						WITH p
-						MATCH (p) -[a:ANSWER_TO]-> (pp:Post {accepted_answer_id: p.id})
-						SET a.accepted = true
+						MATCH (p) -[:HAS_PARENT]-> (pp:Post {accepted_answer_id: p.id})
+						CREATE (p) -[:IS_ACCEPTED_ANSWER_OF]-> (pp)
+						SET pp.accepted_answer_id = null
 					}
 					""");
 				try (var tx = s.beginTransaction()) {
