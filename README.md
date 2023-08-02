@@ -62,12 +62,33 @@ I used the `gis` archive from https://archive.org/details/stackexchange for the 
 # Create intermedia users
 xidel -se '//row/[(@Id|@Reputation|@DisplayName)]' Users.xml | jq -r '. | @tsv' | duckdb -c "copy (select * from read_csv_auto('/dev/stdin', names=['user_id', 'user_reputation', 'user_name'])) to 'users.csv' HEADER;"
 # Create intermediate posts
-xidel -se '//row[string(@Title) and string(@OwnerUserId)]/[(@Id|@OwnerUserId|@Title)]' posts.xml | jq -r '. | @tsv' | duckdb -c "copy (select * from read_csv_auto('/dev/stdin', names=['id', 'user_id', 'title_or_excerpt'], quote='', escape='')) to '/dev/stdout' HEADER;" > posts.csv
-xidel -se '//row[not(string(@Title)) and string(@OwnerUserId)]/[(@Id|@Body|@OwnerUserId)]' posts.xml | jq -r '. | @tsv' | duckdb -c "copy (select id, user_id, substring(title_or_excerpt, 0, 32) as title_or_excerpt from read_csv_auto('/dev/stdin', names=['id', 'title_or_excerpt', 'user_id'], quote='', escape='')) to '/dev/stdout';" >> posts.csv
+xidel -se '//row[string(@Title) and string(@OwnerUserId)]/[(@Id|@CreationDate|@OwnerUserId|@LastActivityDate|@Title)]' posts.xml | jq -r '. | @tsv' | duckdb -c "copy (
+  select id, user_id, strftime(created_at, '%Y-%m-%dT%H:%M:%S') AS created_at, strftime(last_activity_date, '%Y-%m-%dT%H:%M:%S') AS last_activity_date, title_or_excerpt 
+  from read_csv_auto('/dev/stdin', names=['id', 'created_at', 'user_id', 'last_activity_date', 'title_or_excerpt'], quote='', escape='')
+) to '/dev/stdout' HEADER;" > posts.csv
+xidel -se '//row[not(string(@Title)) and string(@OwnerUserId)]/[(@Id|@CreationDate|@Body|@OwnerUserId|@LastActivityDate)]' posts.xml | jq -r '. | @tsv' | duckdb -c "copy (
+  select id, user_id, strftime(created_at, '%Y-%m-%dT%H:%M:%S') AS created_at, strftime(last_activity_date, '%Y-%m-%dT%H:%M:%S') AS last_activity_date, substring(title_or_excerpt, 0, 32) as title_or_excerpt 
+  from read_csv_auto('/dev/stdin', names=['id', 'created_at', 'title_or_excerpt', 'user_id', 'last_activity_date'], quote='', escape='')
+) to '/dev/stdout';" >> posts.csv
+# Posts with accepted answers
+xidel -se '//row[(string(@AcceptedAnswerId)) and string(@OwnerUserId)]/[(@Id|@AcceptedAnswerId)]' posts.xml | jq -r '. | @tsv' | duckdb -c "copy (
+  select * from read_csv_auto('/dev/stdin', names=['id', 'accepted_answer_id'])
+) to '/dev/stdout' HEADER;" > accepted_answers.csv
+# Parents
+xidel -se '//row[(string(@ParentId)) and string(@OwnerUserId)]/[(@Id|@ParentId)]' posts.xml | jq -r '. | @tsv' | duckdb -c "copy (
+  select * from read_csv_auto('/dev/stdin', names=['id', 'parent_id'])
+) to '/dev/stdout' HEADER;" > parents.csv
 # Join them together, export to parquet
 duckdb -c "COPY (
   SELECT *
     FROM 'posts.csv'
     JOIN 'users.csv' USING (user_id)
-) TO 'so.parquet'"
+    LEFT OUTER JOIN 'accepted_answers.csv' USING (id) 
+    LEFT OUTER JOIN 'parents.csv' USING (id)
+  ORDER BY ID asc 
+) TO 'posts.parquet'"
 ```
+
+Those can be loaded with `SoLoaderApplication` and will create a schema like this:
+
+![schema](posts-schema.png)

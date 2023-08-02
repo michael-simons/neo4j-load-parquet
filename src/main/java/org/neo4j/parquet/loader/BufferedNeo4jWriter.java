@@ -19,27 +19,28 @@ class BufferedNeo4jWriter implements Flushable {
 	record Counters(
 		int labelsAdded,
 		int nodesCreated,
+		int releationshipsCreated,
 		int propertiesSet
 	) {
 
 		Counters() {
-			this(0, 0, 0);
+			this(0, 0, 0, 0);
 		}
 
 		Counters(SummaryCounters counters) {
-			this(counters.labelsAdded(), counters.nodesCreated(), counters.propertiesSet());
+			this(counters.labelsAdded(), counters.nodesCreated(), counters.relationshipsCreated(), counters.propertiesSet());
 		}
 
 		Counters plus(Counters rhs) {
-			return new Counters(labelsAdded + rhs.labelsAdded(), nodesCreated + rhs.nodesCreated(), propertiesSet + rhs.propertiesSet());
+			return new Counters(labelsAdded + rhs.labelsAdded(), nodesCreated + rhs.nodesCreated(), releationshipsCreated + rhs.releationshipsCreated(), propertiesSet + rhs.propertiesSet());
 		}
 
 		Counters plus(SummaryCounters rhs) {
-			return new Counters(labelsAdded + rhs.labelsAdded(), nodesCreated + rhs.nodesCreated(), propertiesSet + rhs.propertiesSet());
+			return new Counters(labelsAdded + rhs.labelsAdded(), nodesCreated + rhs.nodesCreated(), releationshipsCreated + rhs.relationshipsCreated(), propertiesSet + rhs.propertiesSet());
 		}
 	}
 
-	interface WriteStrategy {
+	public interface WriteStrategy {
 
 		Counters write(Session session, String label, List<Value> values);
 	}
@@ -74,16 +75,16 @@ class BufferedNeo4jWriter implements Flushable {
 
 	private final Session session;
 	private final int batchSize;
-	private final Mode mode;
+	private final WriteStrategy mode;
 	private final List<Value> buffer;
 	private final String label;
 	private Counters counters = new Counters();
 
-	public BufferedNeo4jWriter(Session session, int batchSize, Mode mode, String label) {
+	public BufferedNeo4jWriter(Session session, int batchSize, WriteStrategy writeStrategy, String label) {
 
 		this.session = session;
 		this.batchSize = batchSize;
-		this.mode = mode;
+		this.mode = writeStrategy;
 		this.buffer = new ArrayList<>(batchSize);
 		this.label = label;
 	}
