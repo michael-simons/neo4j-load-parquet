@@ -96,15 +96,16 @@ public final class Application implements Callable<Integer> {
 			var driver = GraphDatabase.driver(address, AuthTokens.basic(user, new String(password)));
 			var session = driver.session(SessionConfig.forDatabase(database));
 		) {
-			var start = System.currentTimeMillis();
-			var writer = new BufferedNeo4jWriter(session, batchSize, mode, label);
-
 			session.run("""
 				MATCH (p) WHERE $label IN labels(p)
 				CALL {
 				    WITH p DETACH DELETE p
 				} IN TRANSACTIONS OF $rows ROWS""", Map.of("label", label, "rows", batchSize)).consume();
+
+			var writer = new BufferedNeo4jWriter(session, batchSize, mode, label);
 			var data = ParquetReader.streamContent(file, listOfColumns -> new PropertiesHydrator<>(listOfColumns, Values::value));
+
+			var start = System.currentTimeMillis();
 			data.forEach(writer::addNode);
 			writer.flush();
 
