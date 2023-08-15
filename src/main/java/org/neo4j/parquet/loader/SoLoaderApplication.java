@@ -23,46 +23,7 @@ import scala.Int;
  * Loads a SO-dump converted to parquet (as described in the readme) into the database via the driver.
  */
 @CommandLine.Command(name = "neo4j-load-so", mixinStandardHelpOptions = true)
-public class SoLoaderApplication implements Callable<Integer> {
-	@CommandLine.Option(
-		names = {"-a", "--address"},
-		description = "The address of the Neo4j host.",
-		required = true,
-		defaultValue = "bolt://localhost:7687"
-	)
-	private URI address;
-
-	@CommandLine.Option(
-		names = {"-u", "--username"},
-		description = "The login of the user connecting to the database.",
-		required = true,
-		defaultValue = "neo4j"
-	)
-	private String user;
-
-	@CommandLine.Option(
-		names = {"-p", "--password"},
-		description = "The password of the user connecting to the database.",
-		required = true,
-		defaultValue = "verysecret"
-	)
-	private char[] password;
-
-	@CommandLine.Option(
-		names = {"--batch-size"},
-		description = "Batch size to use",
-		required = true,
-		defaultValue = "50000"
-	)
-	private int batchSize;
-
-	@CommandLine.Option(
-		names = {"--database"},
-		description = "The target database",
-		required = true,
-		defaultValue = "neo4j"
-	)
-	private String database;
+public class SoLoaderApplication extends AbstractCliApplication implements Callable<Integer> {
 
 	@CommandLine.Parameters
 	File file;

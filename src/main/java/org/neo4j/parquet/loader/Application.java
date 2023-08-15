@@ -18,31 +18,7 @@ import picocli.CommandLine.Option;
  * Loads Parquet file into the database via the driver
  */
 @CommandLine.Command(name = "neo4j-load-parquet", mixinStandardHelpOptions = true)
-public final class Application implements Callable<Integer> {
-
-	@Option(
-		names = {"-a", "--address"},
-		description = "The address of the Neo4j host.",
-		required = true,
-		defaultValue = "bolt://localhost:7687"
-	)
-	private URI address;
-
-	@Option(
-		names = {"-u", "--username"},
-		description = "The login of the user connecting to the database.",
-		required = true,
-		defaultValue = "neo4j"
-	)
-	private String user;
-
-	@Option(
-		names = {"-p", "--password"},
-		description = "The password of the user connecting to the database.",
-		required = true,
-		defaultValue = "verysecret"
-	)
-	private char[] password;
+public final class Application extends AbstractCliApplication implements Callable<Integer> {
 
 	@Option(
 		names = {"--mode"},
@@ -66,14 +42,6 @@ public final class Application implements Callable<Integer> {
 		required = true
 	)
 	private String label;
-
-	@Option(
-		names = {"--database"},
-		description = "The target database",
-		required = true,
-		defaultValue = "neo4j"
-	)
-	private String database;
 
 	@CommandLine.Parameters
 	File file;

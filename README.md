@@ -92,3 +92,20 @@ duckdb -c "COPY (
 Those can be loaded with `SoLoaderApplication` and will create a schema like this:
 
 ![schema](posts-schema.png)
+
+### Connect to a relational database and use a query result as input
+
+This will delete all nodes with the label `TestImport` and create as many as there are rows returned by the given query. All columns of the query will be turned into properties.
+
+The example uses In-Memory [DuckDB](https://duckdb.org) for querying the above parquet file as relational table.
+Yes, this is stupid, and yes, it is fun too and spares me setting up another database.
+
+Compile as above and adapt your classpath pointing to the JDBC driver for DuckDB accordingly:
+
+```bash
+java -cp target/neo4j-load-parquet-1.0-SNAPSHOT.jar:$HOME/.m2/repository/org/duckdb/duckdb_jdbc/0.8.1/duckdb_jdbc-0.8.1.jar \
+  org.neo4j.parquet.loader.SQLLoaderApplication \
+  --label=TestFromRelational \
+  --jdbc-url=jdbc:duckdb: \
+  "SELECT * from read_parquet('https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2023-03.parquet') LIMIT 5000"
+```
